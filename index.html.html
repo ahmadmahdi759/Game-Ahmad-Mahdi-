@@ -1,0 +1,2779 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f766e">
+<meta name="author" content="Ahmad Mahdi">
+<title>EduSmart Adventure — Game & Perangkat Ajar</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Excel & Word generation -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@9.5.1/build/index.umd.min.js"></script>
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter','system-ui','sans-serif']
+      },
+      colors: {
+        earth: {
+          50:'#f5faf8',100:'#e4f2ee',200:'#c6e5dc',300:'#98d0c0',
+          400:'#60b29d',500:'#37927f',600:'#287565',700:'#1e5d52',
+          800:'#184b43',900:'#123d38'
+        }
+      },
+      boxShadow:{
+        glow:'0 0 30px rgba(45,212,191,.25)',
+        card:'0 20px 60px rgba(15,118,110,.12)'
+      }
+    }
+  }
+}
+</script>
+
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:Inter,system-ui,sans-serif;
+  background:
+    radial-gradient(circle at 10% 10%,rgba(45,212,191,.14),transparent 28%),
+    radial-gradient(circle at 90% 15%,rgba(245,158,11,.12),transparent 25%),
+    linear-gradient(135deg,#f8fafc,#ecfdf5 50%,#fff7ed);
+  color:#183b38;
+}
+.glass{
+  background:rgba(255,255,255,.78);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,.75);
+  box-shadow:0 20px 60px rgba(15,118,110,.10)
+}
+.gradient-text{
+  background:linear-gradient(90deg,#0f766e,#16a34a,#f59e0b);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent
+}
+.hero-pattern{
+  background-image:
+  linear-gradient(rgba(15,118,110,.04) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(15,118,110,.04) 1px,transparent 1px);
+  background-size:35px 35px
+}
+.card-hover{
+  transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease
+}
+.card-hover:hover{
+  transform:translateY(-5px);
+  box-shadow:0 20px 45px rgba(15,118,110,.15);
+  border-color:#5eead4
+}
+.btn{
+  transition:transform .15s ease,box-shadow .2s ease,opacity .2s ease
+}
+.btn:active{transform:scale(.96)}
+.pulse{
+  animation:pulse 1.8s infinite
+}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(20,184,166,.35)}
+  50%{box-shadow:0 0 0 15px rgba(20,184,166,0)}
+}
+.float{
+  animation:float 4s ease-in-out infinite
+}
+@keyframes float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-10px)}
+}
+.pop{
+  animation:pop .4s ease
+}
+@keyframes pop{
+  0%{transform:scale(.8);opacity:0}
+  100%{transform:scale(1);opacity:1}
+}
+.correct{
+  animation:correct .55s ease
+}
+@keyframes correct{
+  30%{transform:scale(1.04)}
+  60%{transform:rotate(-1deg) scale(1.02)}
+}
+.wrong{
+  animation:shake .45s ease
+}
+@keyframes shake{
+  20%,80%{transform:translateX(-8px)}
+  40%,60%{transform:translateX(8px)}
+}
+.confetti{
+  position:fixed;
+  width:9px;
+  height:15px;
+  z-index:9999;
+  pointer-events:none;
+  animation:fall 1.4s linear forwards
+}
+@keyframes fall{
+  0%{transform:translateY(-20px) rotate(0);opacity:1}
+  100%{transform:translateY(105vh) rotate(720deg);opacity:0}
+}
+.earth-map{
+  position:relative;
+  overflow:hidden
+}
+.earth-map:before{
+  content:"";
+  position:absolute;
+  inset:-30%;
+  background:
+   radial-gradient(circle,#5eead4 0 2%,transparent 2.5%),
+   radial-gradient(circle,#34d399 0 1.5%,transparent 2%);
+  background-size:45px 45px,67px 67px;
+  opacity:.18;
+  transform:rotate(-8deg)
+}
+.answer-card{
+  cursor:pointer;
+  min-height:105px;
+}
+.answer-card.selected{border-color:#14b8a6!important;background:#ecfdf5!important}
+.answer-card.correct-answer{border-color:#22c55e!important;background:#f0fdf4!important}
+.answer-card.wrong-answer{border-color:#ef4444!important;background:#fef2f2!important}
+.timer-danger{animation:pulse .7s infinite}
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:20px}
+::-webkit-scrollbar-track{background:#f1f5f9}
+</style>
+</head>
+
+<body>
+
+<!-- =========================================================
+     APPLICATION
+========================================================= -->
+<div id="app">
+
+<!-- HEADER -->
+<header class="sticky top-0 z-50 glass border-b">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+    <button onclick="showHome()" class="flex items-center gap-3 text-left">
+      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-teal-600 to-emerald-500 text-white grid place-items-center text-2xl shadow-lg">
+        🌍
+      </div>
+      <div>
+        <div class="font-black text-lg leading-none">EduSmart</div>
+        <div class="text-xs text-slate-500">Adventure • Learning • Challenge</div>
+      </div>
+    </button>
+
+    <div class="hidden md:flex items-center gap-2 text-xs font-bold text-slate-500">
+      <span class="px-3 py-2 rounded-full bg-teal-50 text-teal-700">TA 2026/2027</span>
+      <span class="px-3 py-2 rounded-full bg-amber-50 text-amber-700">Kurikulum Merdeka</span>
+      <span class="px-3 py-2 rounded-full bg-emerald-50 text-emerald-700">Deep Learning</span>
+    </div>
+
+    <button onclick="openLogin()" class="btn px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-bold">
+      🔐 Pengembang
+    </button>
+  </div>
+</header>
+
+<!-- =========================================================
+     HOME
+========================================================= -->
+<section id="homeScreen" class="min-h-screen hero-pattern">
+  <div class="max-w-7xl mx-auto px-4 py-8 md:py-14">
+
+    <div class="grid lg:grid-cols-2 gap-8 items-center">
+      <div>
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-sm text-sm font-bold text-teal-700 mb-5">
+          🚀 GAME EDUKASI INTERAKTIF
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        </div>
+
+        <h1 class="text-4xl md:text-6xl font-black leading-tight">
+          Belajar Jadi
+          <span class="gradient-text">Petualangan Seru!</span>
+        </h1>
+
+        <p class="mt-5 text-lg text-slate-600 max-w-2xl">
+          Kuis Cerdas Cermat, IQ & Teka-Teki, Temukan Gambar, Puzzle,
+          Millionaire Challenge dan Spelling Test dalam satu aplikasi.
+        </p>
+
+        <div class="mt-7 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="glass rounded-2xl p-4 text-center card-hover">
+            <div class="text-3xl">🧠</div>
+            <div class="font-black mt-2">IQ</div>
+          </div>
+          <div class="glass rounded-2xl p-4 text-center card-hover">
+            <div class="text-3xl">🧩</div>
+            <div class="font-black mt-2">Puzzle</div>
+          </div>
+          <div class="glass rounded-2xl p-4 text-center card-hover">
+            <div class="text-3xl">💰</div>
+            <div class="font-black mt-2">Millionaire</div>
+          </div>
+          <div class="glass rounded-2xl p-4 text-center card-hover">
+            <div class="text-3xl">🔤</div>
+            <div class="font-black mt-2">Spelling</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative">
+        <div class="glass rounded-[2rem] p-5 md:p-7 earth-map">
+          <div class="relative z-10">
+            <div class="flex justify-between items-center mb-5">
+              <div>
+                <div class="text-sm font-bold text-slate-500">WORLD LEARNING MAP</div>
+                <div class="text-2xl font-black">Misi Pengetahuan 🌏</div>
+              </div>
+              <div class="text-4xl float">🧭</div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+              <div class="bg-teal-50 rounded-2xl p-5 text-center">
+                <div class="text-4xl">📚</div>
+                <div class="font-black text-sm mt-2">Semua Mapel</div>
+              </div>
+              <div class="bg-emerald-50 rounded-2xl p-5 text-center">
+                <div class="text-4xl">🎯</div>
+                <div class="font-black text-sm mt-2">50 Soal</div>
+              </div>
+              <div class="bg-amber-50 rounded-2xl p-5 text-center">
+                <div class="text-4xl">🔥</div>
+                <div class="font-black text-sm mt-2">20 HOTS</div>
+              </div>
+            </div>
+
+            <div class="mt-4 rounded-2xl bg-white/80 p-4">
+              <div class="flex items-center justify-between text-sm">
+                <span class="font-bold">Progress Petualangan</span>
+                <span class="font-black text-teal-700">LEVEL 1</span>
+              </div>
+              <div class="mt-3 h-3 rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-full w-[72%] bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full"></div>
+              </div>
+              <div class="flex justify-between mt-2 text-xs text-slate-500">
+                <span>Mulai perjalanan</span>
+                <span>Master EduSmart</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAME SETUP -->
+    <div class="mt-10 glass rounded-[2rem] p-5 md:p-8 shadow-card">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-7">
+        <div>
+          <div class="text-xs font-black uppercase tracking-widest text-teal-600">START GAME</div>
+          <h2 class="text-2xl md:text-3xl font-black">Siapkan Petualanganmu 🎮</h2>
+        </div>
+        <div class="px-4 py-3 rounded-2xl bg-amber-50 text-amber-800 text-sm font-bold">
+          💡 Setiap permainan menghasilkan kombinasi soal baru
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+
+        <div>
+          <label class="block text-sm font-black mb-2">Nama Pemain</label>
+          <input id="playerName" type="text" placeholder="Tulis nama..."
+            class="w-full rounded-2xl border-2 border-slate-200 px-4 py-3 outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-100">
+        </div>
+
+        <div>
+          <label class="block text-sm font-black mb-2">Jenjang</label>
+          <select id="levelSelect" onchange="updateClassOptions()"
+            class="w-full rounded-2xl border-2 border-slate-200 px-4 py-3 bg-white outline-none focus:border-teal-500">
+            <option value="SD/MI">SD / MI</option>
+            <option value="SMP/MTS">SMP / MTs</option>
+            <option value="SMA/MA">SMA / MA</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-black mb-2">Kelas</label>
+          <select id="classSelect"
+            class="w-full rounded-2xl border-2 border-slate-200 px-4 py-3 bg-white outline-none focus:border-teal-500">
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-black mb-2">Mata Pelajaran</label>
+          <select id="subjectSelect"
+            class="w-full rounded-2xl border-2 border-slate-200 px-4 py-3 bg-white outline-none focus:border-teal-500">
+          </select>
+        </div>
+
+      </div>
+
+      <div class="mt-5 grid md:grid-cols-2 gap-5">
+
+        <div>
+          <label class="block text-sm font-black mb-2">Mode Permainan</label>
+          <select id="modeSelect"
+            class="w-full rounded-2xl border-2 border-slate-200 px-4 py-3 bg-white outline-none focus:border-teal-500">
+            <option value="cerdas">🏆 Cerdas Cermat</option>
+            <option value="iq">🧠 IQ & Teka-Teki</option>
+            <option value="gambar">🖼️ Temukan Gambar</option>
+            <option value="puzzle">🧩 Puzzle</option>
+            <option value="millionaire">💰 Millionaire Challenge</option>
+            <option value="spelling">🔤 Spelling Test</option>
+            <option value="campuran">🎮 Campuran Semua Mode</option>
+          </select>
+        </div>
+
+        <div class="flex items-end">
+          <button onclick="startGame()"
+            class="btn pulse w-full rounded-2xl py-4 bg-gradient-to-r from-teal-600 via-emerald-600 to-green-600 text-white font-black text-lg shadow-xl">
+            🚀 MULAI PETUALANGAN
+          </button>
+        </div>
+
+      </div>
+
+      <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="rounded-2xl bg-slate-50 p-4">
+          <div class="text-2xl">❤️</div>
+          <div class="font-black">5 Lives</div>
+          <div class="text-xs text-slate-500">Kesempatan menjawab</div>
+        </div>
+        <div class="rounded-2xl bg-slate-50 p-4">
+          <div class="text-2xl">🎯</div>
+          <div class="font-black">50 Soal</div>
+          <div class="text-xs text-slate-500">Setiap permainan</div>
+        </div>
+        <div class="rounded-2xl bg-slate-50 p-4">
+          <div class="text-2xl">🔥</div>
+          <div class="font-black">20 HOTS</div>
+          <div class="text-xs text-slate-500">Soal berpikir tingkat tinggi</div>
+        </div>
+        <div class="rounded-2xl bg-slate-50 p-4">
+          <div class="text-2xl">🔀</div>
+          <div class="font-black">Random</div>
+          <div class="text-xs text-slate-500">Soal & jawaban diacak</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEATURES -->
+    <div class="mt-10">
+      <div class="text-center mb-7">
+        <div class="text-xs font-black uppercase tracking-widest text-teal-600">FITUR</div>
+        <h2 class="text-3xl font-black">Satu Aplikasi untuk Banyak Kebutuhan</h2>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="glass rounded-3xl p-6 card-hover">
+          <div class="text-5xl mb-4">🎮</div>
+          <h3 class="font-black text-lg">Game Edukasi</h3>
+          <p class="text-sm text-slate-500 mt-2">Berbagai mode permainan interaktif untuk membuat pembelajaran lebih menyenangkan.</p>
+        </div>
+        <div class="glass rounded-3xl p-6 card-hover">
+          <div class="text-5xl mb-4">📊</div>
+          <h3 class="font-black text-lg">Analisis Nilai</h3>
+          <p class="text-sm text-slate-500 mt-2">Skor, persentase, HOTS, waktu, dan riwayat permainan tersimpan secara lokal.</p>
+        </div>
+        <div class="glass rounded-3xl p-6 card-hover">
+          <div class="text-5xl mb-4">📄</div>
+          <h3 class="font-black text-lg">Perangkat Ajar</h3>
+          <p class="text-sm text-slate-500 mt-2">Modul Ajar, ATP, KKTP, Prota, Promes, LKPD, CP, penilaian dan jurnal.</p>
+        </div>
+        <div class="glass rounded-3xl p-6 card-hover">
+          <div class="text-5xl mb-4">📥</div>
+          <h3 class="font-black text-lg">Download</h3>
+          <p class="text-sm text-slate-500 mt-2">Hasil permainan Excel serta dokumen perangkat ajar yang dapat diedit.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEVELOPER SUPPORT -->
+    <div class="mt-10 rounded-[2rem] overflow-hidden bg-gradient-to-r from-slate-900 via-teal-950 to-emerald-950 text-white">
+      <div class="p-6 md:p-8 grid lg:grid-cols-[1fr_auto] gap-6 items-center">
+        <div>
+          <div class="text-xs font-black uppercase tracking-widest text-teal-300">DUKUNG PENGEMBANGAN</div>
+          <h2 class="text-2xl md:text-3xl font-black mt-2">
+            Demi mendukung perkembangan kinerja pendidik
+          </h2>
+          <p class="text-slate-300 mt-2 max-w-3xl">
+            Aplikasi ini dikembangkan untuk mendukung aktivitas pembelajaran,
+            evaluasi dan penyusunan perangkat ajar.
+          </p>
+          <div class="mt-5 flex flex-wrap gap-3">
+            <div class="px-4 py-3 rounded-2xl bg-white/10 border border-white/10">
+              <span class="text-2xl">💙</span>
+              <span class="font-black ml-2">DANA</span>
+            </div>
+            <div class="px-4 py-3 rounded-2xl bg-white/10 border border-white/10">
+              <span class="text-slate-300 text-sm">Nomor:</span>
+              <span class="font-black ml-2">081318209923</span>
+            </div>
+            <div class="px-4 py-3 rounded-2xl bg-amber-400/10 border border-amber-300/20 text-amber-200">
+              Kontribusi: Rp200.000
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-3xl bg-white text-slate-900 p-6 min-w-[280px]">
+          <div class="text-sm text-slate-500 font-bold">Akses Pengembang</div>
+          <div class="text-xl font-black mt-1">Ahmad Mahdi</div>
+          <div class="mt-4 text-sm">
+            <div class="flex justify-between py-2 border-b">
+              <span>Username</span><b>Ahmad Mahdi</b>
+            </div>
+            <div class="flex justify-between py-2">
+              <span>Status</span><b class="text-emerald-600">Developer</b>
+            </div>
+          </div>
+          <button onclick="openLogin()" class="btn mt-4 w-full rounded-xl bg-slate-900 text-white py-3 font-black">
+            🔐 Masuk Area Pengembang
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- =========================================================
+     GAME SCREEN
+========================================================= -->
+<section id="gameScreen" class="hidden min-h-screen py-5 md:py-8">
+  <div class="max-w-6xl mx-auto px-4">
+
+    <div class="glass rounded-3xl p-4 md:p-5 mb-5">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="text-xs font-bold text-teal-600" id="gameMeta">SD/MI • Kelas 1 • Matematika</div>
+          <div class="font-black text-xl" id="gamePlayer">Pemain</div>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <div class="text-center">
+            <div class="text-xs text-slate-500">SOAL</div>
+            <div class="font-black"><span id="questionNumber">1</span>/50</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-slate-500">SKOR</div>
+            <div class="font-black text-teal-700" id="scoreDisplay">0</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-slate-500">NYAWA</div>
+            <div id="livesDisplay" class="font-black text-red-500">❤️❤️❤️❤️❤️</div>
+          </div>
+          <div id="timerBox" class="rounded-2xl bg-slate-900 text-white px-4 py-3 text-center min-w-[65px]">
+            <div class="text-xs opacity-70">TIME</div>
+            <div id="timerDisplay" class="font-black text-xl">30</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 h-3 rounded-full bg-slate-100 overflow-hidden">
+        <div id="progressBar" class="h-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all duration-500" style="width:2%"></div>
+      </div>
+    </div>
+
+    <div id="questionCard" class="glass rounded-[2rem] p-5 md:p-8">
+      <div class="flex items-center justify-between gap-3">
+        <div id="questionType" class="inline-flex px-4 py-2 rounded-full bg-teal-50 text-teal-700 text-xs font-black">
+          CERDAS CERMAT
+        </div>
+        <div id="hotsBadge" class="hidden px-4 py-2 rounded-full bg-orange-50 text-orange-700 text-xs font-black">
+          🔥 HOTS
+        </div>
+      </div>
+
+      <div id="visualQuestion" class="mt-5"></div>
+
+      <h2 id="questionText" class="mt-5 text-xl md:text-3xl font-black leading-snug">
+        Pertanyaan...
+      </h2>
+
+      <div id="answerGrid" class="mt-7 grid md:grid-cols-2 gap-4"></div>
+
+      <div id="feedbackBox" class="hidden mt-6 rounded-3xl p-5 pop">
+        <div class="flex gap-4 items-start">
+          <div id="feedbackIcon" class="text-5xl">🎉</div>
+          <div>
+            <div id="feedbackTitle" class="font-black text-xl"></div>
+            <div id="feedbackText" class="text-slate-600 mt-1"></div>
+          </div>
+        </div>
+        <button onclick="nextQuestion()" class="btn mt-5 rounded-2xl bg-slate-900 text-white px-6 py-3 font-black">
+          Lanjut ➜
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-4 flex flex-wrap justify-center gap-2">
+      <button onclick="toggleMusic()" id="musicBtn" class="rounded-xl bg-white/80 border px-4 py-2 text-sm font-bold">🔊 Musik</button>
+      <button onclick="quitGame()" class="rounded-xl bg-white/80 border px-4 py-2 text-sm font-bold text-red-600">✕ Keluar</button>
+    </div>
+
+  </div>
+</section>
+
+<!-- =========================================================
+     RESULT SCREEN
+========================================================= -->
+<section id="resultScreen" class="hidden min-h-screen py-8">
+  <div class="max-w-6xl mx-auto px-4">
+
+    <div class="glass rounded-[2rem] p-6 md:p-10 text-center">
+      <div class="text-7xl float">🏆</div>
+      <div class="mt-4 text-sm font-black uppercase tracking-widest text-teal-600">PETUALANGAN SELESAI</div>
+      <h1 class="text-4xl md:text-5xl font-black mt-2">
+        Hebat, <span id="resultName" class="gradient-text">Pemain</span>!
+      </h1>
+      <p id="resultMessage" class="text-slate-500 mt-3">Kamu telah menyelesaikan misi.</p>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 mt-8">
+        <div class="rounded-3xl bg-teal-50 p-5">
+          <div class="text-3xl">⭐</div>
+          <div id="finalScore" class="text-3xl font-black text-teal-700 mt-2">0</div>
+          <div class="text-sm text-slate-500">Skor</div>
+        </div>
+        <div class="rounded-3xl bg-emerald-50 p-5">
+          <div class="text-3xl">🎯</div>
+          <div id="finalCorrect" class="text-3xl font-black text-emerald-700 mt-2">0</div>
+          <div class="text-sm text-slate-500">Benar</div>
+        </div>
+        <div class="rounded-3xl bg-orange-50 p-5">
+          <div class="text-3xl">🔥</div>
+          <div id="finalHots" class="text-3xl font-black text-orange-700 mt-2">0/20</div>
+          <div class="text-sm text-slate-500">HOTS Benar</div>
+        </div>
+        <div class="rounded-3xl bg-indigo-50 p-5">
+          <div class="text-3xl">📈</div>
+          <div id="finalPercent" class="text-3xl font-black text-indigo-700 mt-2">0%</div>
+          <div class="text-sm text-slate-500">Ketuntasan</div>
+        </div>
+        <div class="rounded-3xl bg-rose-50 p-5">
+          <div class="text-3xl">❤️</div>
+          <div id="finalLives" class="text-3xl font-black text-rose-700 mt-2">5</div>
+          <div class="text-sm text-slate-500">Sisa Nyawa</div>
+        </div>
+      </div>
+
+      <div class="mt-8 flex flex-wrap justify-center gap-3">
+        <button onclick="startGame()" class="btn rounded-2xl px-7 py-4 bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-black">
+          🔄 Mainkan Lagi
+        </button>
+        <button onclick="downloadGameExcel()" class="btn rounded-2xl px-7 py-4 bg-slate-900 text-white font-black">
+          📊 Download Excel
+        </button>
+        <button onclick="showHome()" class="btn rounded-2xl px-7 py-4 bg-white border font-black">
+          🏠 Beranda
+        </button>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div class="mt-6 glass rounded-[2rem] p-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <div class="text-xs font-black text-teal-600 uppercase tracking-widest">LOCAL LEADERBOARD</div>
+          <h2 class="text-2xl font-black">Papan Prestasi 🏅</h2>
+        </div>
+        <button onclick="clearLeaderboard()" class="text-xs text-red-500 font-bold">Hapus Riwayat</button>
+      </div>
+      <div id="leaderboardTable" class="mt-5 overflow-x-auto"></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     TEACHING DEVICES
+========================================================= -->
+<section id="adminScreen" class="hidden min-h-screen py-8">
+  <div class="max-w-7xl mx-auto px-4">
+
+    <div class="glass rounded-[2rem] p-6 md:p-8">
+      <div class="flex flex-col lg:flex-row justify-between gap-5">
+        <div>
+          <div class="text-xs font-black uppercase tracking-widest text-teal-600">DEVELOPER AREA</div>
+          <h1 class="text-3xl md:text-4xl font-black">Perangkat Ajar Kurikulum Merdeka</h1>
+          <p class="text-slate-500 mt-2">
+            TA 2026/2027 • SD/MI • SMP/MTs • SMA/MA • Semua Mapel
+          </p>
+        </div>
+        <button onclick="showHome()" class="h-fit rounded-xl bg-slate-900 text-white px-5 py-3 font-black">🏠 Beranda</button>
+      </div>
+
+      <!-- ADMIN CONFIG -->
+      <div class="mt-7 grid md:grid-cols-3 gap-4">
+        <div>
+          <label class="text-sm font-black">Jenjang</label>
+          <select id="adminLevel" onchange="renderAdminClasses()" class="mt-2 w-full rounded-xl border px-4 py-3">
+            <option>SD/MI</option>
+            <option>SMP/MTS</option>
+            <option>SMA/MA</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-sm font-black">Kelas</label>
+          <select id="adminClass" class="mt-2 w-full rounded-xl border px-4 py-3"></select>
+        </div>
+        <div>
+          <label class="text-sm font-black">Mata Pelajaran</label>
+          <select id="adminSubject" class="mt-2 w-full rounded-xl border px-4 py-3"></select>
+        </div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="mt-7 rounded-3xl bg-gradient-to-r from-teal-50 to-emerald-50 p-5">
+        <h3 class="font-black text-xl">🌱 8 Dimensi Profil Lulusan</h3>
+        <div id="profileDimensions" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4"></div>
+      </div>
+
+      <!-- DEEP LEARNING -->
+      <div class="mt-7">
+        <h3 class="font-black text-xl">🧠 Kerangka Pembelajaran Mendalam — 8-3-3-4 & KBC</h3>
+        <div id="deepLearningCards" class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4"></div>
+      </div>
+
+      <!-- DOCUMENTS -->
+      <div class="mt-8">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-3">
+          <div>
+            <h3 class="font-black text-xl">📚 Perangkat Ajar</h3>
+            <p class="text-sm text-slate-500">Dokumen dapat dibuat, diunduh, dan diedit kembali.</p>
+          </div>
+        </div>
+
+        <div id="documentGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5"></div>
+      </div>
+
+      <!-- UPLOAD -->
+      <div class="mt-8 rounded-3xl border-2 border-dashed border-teal-200 bg-teal-50/50 p-6">
+        <h3 class="font-black text-xl">📤 Upload Dokumen</h3>
+        <p class="text-sm text-slate-500 mt-1">
+          Upload file Word/Excel untuk digunakan sebagai arsip lokal aplikasi.
+        </p>
+        <input id="documentUpload" type="file" multiple
+          accept=".doc,.docx,.xls,.xlsx,.csv"
+          class="mt-4 w-full rounded-xl bg-white border p-4">
+        <div id="uploadedDocuments" class="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+
+      <!-- QUESTION GENERATOR -->
+      <div class="mt-8 rounded-3xl bg-slate-900 text-white p-6">
+        <div class="text-xs uppercase tracking-widest text-teal-300 font-black">ASSESSMENT CENTER</div>
+        <h3 class="text-2xl font-black mt-1">Aplikasi Soal, Kunci Jawaban & Kisi-Kisi</h3>
+        <p class="text-slate-400 mt-2">
+          Generate paket soal sesuai jenjang, kelas dan mata pelajaran.
+        </p>
+
+        <div class="mt-5 grid md:grid-cols-3 gap-3">
+          <input id="studentNameDoc" class="rounded-xl px-4 py-3 text-slate-900" placeholder="Nama Siswa">
+          <input id="schoolNameDoc" class="rounded-xl px-4 py-3 text-slate-900" placeholder="Nama Sekolah">
+          <button onclick="downloadAssessmentDoc()" class="rounded-xl bg-teal-500 hover:bg-teal-400 px-4 py-3 font-black">
+            📄 Download Soal + Kisi-Kisi + Kunci
+          </button>
+        </div>
+
+        <button onclick="downloadAssessmentExcel()" class="mt-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 px-5 py-3 font-black">
+          📊 Download Rekap Excel
+        </button>
+      </div>
+
+      <!-- LOCAL STORAGE -->
+      <div class="mt-8 rounded-3xl bg-amber-50 p-6">
+        <h3 class="font-black text-xl">💾 Data Lokal</h3>
+        <p class="text-sm text-slate-600 mt-1">
+          Data leaderboard dan konfigurasi tersimpan di browser perangkat ini.
+        </p>
+        <div class="flex flex-wrap gap-3 mt-4">
+          <button onclick="exportAllData()" class="rounded-xl bg-slate-900 text-white px-5 py-3 font-black">⬇️ Export Data</button>
+          <button onclick="resetApplicationData()" class="rounded-xl bg-red-600 text-white px-5 py-3 font-black">🗑️ Reset Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LOGIN MODAL -->
+<div id="loginModal" class="hidden fixed inset-0 z-[100] bg-slate-950/70 backdrop-blur-sm p-4 grid place-items-center">
+  <div class="glass bg-white rounded-[2rem] w-full max-w-md p-7">
+    <div class="text-center">
+      <div class="text-5xl">🔐</div>
+      <h2 class="text-2xl font-black mt-3">Akses Pengembang</h2>
+      <p class="text-sm text-slate-500">EduSmart Adventure</p>
+    </div>
+
+    <div class="mt-6">
+      <label class="text-sm font-black">Username</label>
+      <input id="loginUser" class="mt-2 w-full rounded-xl border-2 px-4 py-3" placeholder="Username">
+    </div>
+
+    <div class="mt-4">
+      <label class="text-sm font-black">Password</label>
+      <input id="loginPass" type="password" class="mt-2 w-full rounded-xl border-2 px-4 py-3" placeholder="Password">
+    </div>
+
+    <div id="loginError" class="hidden mt-4 rounded-xl bg-red-50 text-red-600 p-3 text-sm font-bold">
+      Username atau password salah.
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-6">
+      <button onclick="closeLogin()" class="rounded-xl border py-3 font-black">Batal</button>
+      <button onclick="developerLogin()" class="rounded-xl bg-slate-900 text-white py-3 font-black">Masuk</button>
+    </div>
+
+    <div class="mt-5 text-xs text-slate-400 text-center">
+      Akses area pengembang diperuntukkan untuk pengelolaan aplikasi.
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="fixed bottom-5 right-5 z-[110] hidden">
+  <div class="glass bg-white rounded-2xl px-5 py-4 shadow-xl">
+    <span id="toastIcon">✅</span>
+    <span id="toastText" class="font-bold ml-2">Berhasil</span>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* =========================================================
+   DATA APLIKASI
+========================================================= */
+
+const SUBJECTS = [
+  "Bahasa Arab",
+  "Bahasa Inggris",
+  "IPS",
+  "IPA",
+  "Qur'an Hadist",
+  "Bahasa Indonesia",
+  "SKI",
+  "Akidah Akhlak",
+  "Seni Budaya",
+  "Seni Musik",
+  "Bahasa Sunda",
+  "BTQ",
+  "PAI",
+  "PJOK",
+  "PKN",
+  "TIK",
+  "Matematika"
+];
+
+const SUBJECT_ICONS = {
+  "Bahasa Arab":"🕌",
+  "Bahasa Inggris":"🇬🇧",
+  "IPS":"🌏",
+  "IPA":"🔬",
+  "Qur'an Hadist":"📖",
+  "Bahasa Indonesia":"📚",
+  "SKI":"🏛️",
+  "Akidah Akhlak":"🤝",
+  "Seni Budaya":"🎨",
+  "Seni Musik":"🎵",
+  "Bahasa Sunda":"🌿",
+  "BTQ":"🕋",
+  "PAI":"☪️",
+  "PJOK":"⚽",
+  "PKN":"🇮🇩",
+  "TIK":"💻",
+  "Matematika":"🔢"
+};
+
+const DOC_TYPES = [
+  {name:"Modul Ajar",type:"word",icon:"📘",desc:"Modul ajar lengkap Semester 1 & 2"},
+  {name:"ATP",type:"word",icon:"🗺️",desc:"Alur Tujuan Pembelajaran"},
+  {name:"KKTP",type:"word",icon:"🎯",desc:"Kriteria Ketercapaian Tujuan Pembelajaran"},
+  {name:"Prota",type:"excel",icon:"📊",desc:"Program Tahunan"},
+  {name:"Promes",type:"word",icon:"📅",desc:"Program Semester"},
+  {name:"LKPD",type:"word",icon:"📝",desc:"Lembar Kerja Peserta Didik"},
+  {name:"Media Pembelajaran",type:"word",icon:"🎬",desc:"Rancangan media pembelajaran"},
+  {name:"CP Kemenag 046 + Kemendikbud",type:"word",icon:"📜",desc:"Capaian Pembelajaran"},
+  {name:"Penilaian",type:"excel",icon:"📈",desc:"Instrumen dan rekap penilaian"},
+  {name:"Jurnal Harian",type:"excel",icon:"📔",desc:"Jurnal kegiatan pembelajaran"},
+  {name:"Soal + Kunci + Kisi-Kisi",type:"word",icon:"🧠",desc:"Paket asesmen lengkap"}
+];
+
+const PROFILE_DIMENSIONS = [
+  ["🧭","Keimanan & Ketakwaan","Membangun karakter berlandaskan nilai spiritual."],
+  ["❤️","Kewargaan","Berperan aktif sebagai warga yang bertanggung jawab."],
+  ["🧠","Penalaran Kritis","Menganalisis informasi dan memecahkan masalah."],
+  ["🎨","Kreativitas","Menghasilkan ide, karya dan solusi inovatif."],
+  ["🤝","Kolaborasi","Bekerja bersama secara efektif dan positif."],
+  ["🌎","Kemandirian","Mengelola diri dan proses belajar."],
+  ["💬","Komunikasi","Menyampaikan gagasan secara efektif."],
+  ["🌱","Kesehatan","Menjaga kesehatan fisik, mental dan sosial."]
+];
+
+const DEEP_LEARNING = [
+  ["01","Berkesadaran","Belajar dengan sadar, fokus dan reflektif."],
+  ["02","Bermakna","Menghubungkan pembelajaran dengan kehidupan nyata."],
+  ["03","Menggembirakan","Belajar melalui pengalaman yang positif dan menyenangkan."],
+  ["04","Memahami","Membangun konsep dan pengetahuan."],
+  ["05","Mengaplikasi","Menerapkan konsep dalam konteks nyata."],
+  ["06","Merefleksi","Mengevaluasi proses dan hasil belajar."],
+  ["07","KBC","Kurikulum Berbasis Cinta: cinta Tuhan, ilmu, diri, sesama dan lingkungan."],
+  ["08","8-3-3-4","Kerangka pengorganisasian pengalaman belajar dan asesmen secara bertahap."]
+];
+
+const HOTS_PATTERNS = [
+  "Analisis situasi",
+  "Evaluasi pilihan",
+  "Pemecahan masalah",
+  "Perbandingan",
+  "Prediksi",
+  "Sebab-akibat",
+  "Penerapan konsep",
+  "Penalaran"
+];
+
+/* =========================================================
+   STATE
+========================================================= */
+
+let state = {
+  player:"",
+  level:"SD/MI",
+  grade:"1",
+  subject:"Matematika",
+  mode:"cerdas",
+  questions:[],
+  index:0,
+  score:0,
+  correct:0,
+  wrong:0,
+  lives:5,
+  hotsCorrect:0,
+  hotsTotal:20,
+  startTime:null,
+  answers:[],
+  timer:null,
+  timeLeft:30,
+  music:true
+};
+
+let audioCtx = null;
+let musicTimer = null;
+
+/* =========================================================
+   INIT
+========================================================= */
+
+document.addEventListener("DOMContentLoaded",()=>{
+  populateSubjects();
+  updateClassOptions();
+  renderAdminClasses();
+  renderAdminSubjects();
+  renderProfile();
+  renderDeepLearning();
+  renderDocuments();
+  loadUploadedDocuments();
+});
+
+function populateSubjects(){
+  const select = document.getElementById("subjectSelect");
+  select.innerHTML = SUBJECTS.map(s =>
+    `<option value="${escapeHTML(s)}">${SUBJECT_ICONS[s]} ${escapeHTML(s)}</option>`
+  ).join("");
+}
+
+function updateClassOptions(){
+  const level = document.getElementById("levelSelect").value;
+  const select = document.getElementById("classSelect");
+
+  let grades=[];
+  if(level==="SD/MI") grades=["1","2","3","4","5","6"];
+  if(level==="SMP/MTS") grades=["7","8","9"];
+  if(level==="SMA/MA") grades=["10","11","12"];
+
+  select.innerHTML=grades.map(g=>`<option value="${g}">Kelas ${g}</option>`).join("");
+}
+
+function renderAdminClasses(){
+  const level=document.getElementById("adminLevel").value;
+  const select=document.getElementById("adminClass");
+  let grades=[];
+  if(level==="SD/MI") grades=["1","2","3","4","5","6"];
+  if(level==="SMP/MTS") grades=["7","8","9"];
+  if(level==="SMA/MA") grades=["10","11","12"];
+  select.innerHTML=grades.map(g=>`<option>Kelas ${g}</option>`).join("");
+}
+
+function renderAdminSubjects(){
+  document.getElementById("adminSubject").innerHTML =
+    SUBJECTS.map(s=>`<option>${SUBJECT_ICONS[s]} ${escapeHTML(s)}</option>`).join("");
+}
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+function showHome(){
+  hideAllScreens();
+  document.getElementById("homeScreen").classList.remove("hidden");
+  stopMusic();
+}
+
+function showGame(){
+  hideAllScreens();
+  document.getElementById("gameScreen").classList.remove("hidden");
+}
+
+function showResult(){
+  hideAllScreens();
+  document.getElementById("resultScreen").classList.remove("hidden");
+}
+
+function showAdmin(){
+  hideAllScreens();
+  document.getElementById("adminScreen").classList.remove("hidden");
+}
+
+function hideAllScreens(){
+  ["homeScreen","gameScreen","resultScreen","adminScreen"].forEach(id=>{
+    document.getElementById(id).classList.add("hidden");
+  });
+}
+
+/* =========================================================
+   GAME START
+========================================================= */
+
+function startGame(){
+  const name=document.getElementById("playerName").value.trim();
+
+  if(!name){
+    toast("⚠️","Masukkan nama pemain terlebih dahulu.");
+    document.getElementById("playerName").focus();
+    return;
+  }
+
+  state.player=name;
+  state.level=document.getElementById("levelSelect").value;
+  state.grade=document.getElementById("classSelect").value;
+  state.subject=document.getElementById("subjectSelect").value;
+  state.mode=document.getElementById("modeSelect").value;
+  state.index=0;
+  state.score=0;
+  state.correct=0;
+  state.wrong=0;
+  state.lives=5;
+  state.hotsCorrect=0;
+  state.answers=[];
+  state.startTime=Date.now();
+
+  state.questions=buildQuestionSet();
+
+  showGame();
+
+  document.getElementById("gamePlayer").textContent=state.player;
+  document.getElementById("gameMeta").textContent=
+    `${state.level} • Kelas ${state.grade} • ${state.subject}`;
+
+  startMusic();
+  renderQuestion();
+}
+
+function buildQuestionSet(){
+  let questions=[];
+
+  for(let i=0;i<30;i++){
+    questions.push(createGeneratedQuestion(false,i));
+  }
+
+  for(let i=0;i<20;i++){
+    questions.push(createGeneratedQuestion(true,i));
+  }
+
+  return shuffle(questions);
+}
+
+/* =========================================================
+   QUESTION GENERATOR
+========================================================= */
+
+function createGeneratedQuestion(isHots,n){
+  const subject=state.subject;
+  const grade=parseInt(state.grade);
+
+  let q;
+
+  if(subject==="Matematika"){
+    q=mathQuestion(grade,isHots,n);
+  }else if(subject==="Bahasa Inggris"){
+    q=englishQuestion(grade,isHots,n);
+  }else if(subject==="Bahasa Arab"){
+    q=arabicQuestion(grade,isHots,n);
+  }else if(subject==="IPA"){
+    q=scienceQuestion(grade,isHots,n);
+  }else if(subject==="IPS"){
+    q=socialQuestion(grade,isHots,n);
+  }else if(subject==="Bahasa Indonesia"){
+    q=indonesiaQuestion(grade,isHots,n);
+  }else if(subject==="PKN"){
+    q=civicQuestion(grade,isHots,n);
+  }else if(subject==="PJOK"){
+    q=sportQuestion(grade,isHots,n);
+  }else if(subject==="TIK"){
+    q=tikQuestion(grade,isHots,n);
+  }else{
+    q=genericQuestion(subject,grade,isHots,n);
+  }
+
+  q.hots=isHots;
+  q.mode=getQuestionMode(n);
+  q.options=shuffle(q.options.map((text,i)=>({
+    text,
+    icon:["🔵","🟢","🟠","🟣"][i%4]
+  })));
+
+  return q;
+}
+
+function getQuestionMode(n){
+  if(state.mode==="campuran"){
+    return ["cerdas","iq","gambar","puzzle","millionaire","spelling"][n%6];
+  }
+  return state.mode;
+}
+
+/* ---------- MATEMATIKA ---------- */
+
+function mathQuestion(grade,hots,n){
+  const max=Math.min(1000,Math.max(20,grade*120));
+  const a=randomInt(2,max);
+  const b=randomInt(2,Math.max(10,Math.floor(max/2)));
+  const type=n%4;
+
+  if(hots){
+    const base=randomInt(20,100);
+    const result=base*3+15;
+    return {
+      visual:"🔢➕🧠",
+      text:`Sebuah perpustakaan memiliki ${base} buku. Sekolah membeli 3 kali jumlah tersebut lalu mendapat tambahan 15 buku. Berapa jumlah buku sekarang?`,
+      answer:String(result),
+      options:[String(result),String(result+15),String(result-15),String(result+base)],
+      explanation:`Hitung 3 × ${base} = ${base*3}, kemudian ${base*3} + 15 = ${result}.`
+    };
+  }
+
+  if(type===0){
+    const answer=a+b;
+    return {
+      visual:"🔢➕",
+      text:`Berapakah ${a} + ${b}?`,
+      answer:String(answer),
+      options:[String(answer),String(answer+10),String(answer-10),String(answer+5)],
+      explanation:`Penjumlahan ${a} dan ${b} menghasilkan ${answer}.`
+    };
+  }
+
+  if(type===1){
+    const x=Math.max(b,a);
+    const y=Math.min(b,a);
+    const answer=x-y;
+    return {
+      visual:"🔢➖",
+      text:`Berapakah ${x} − ${y}?`,
+      answer:String(answer),
+      options:[String(answer),String(answer+10),String(answer-5),String(answer+5)],
+      explanation:`Kurangkan ${x} dengan ${y}, hasilnya ${answer}.`
+    };
+  }
+
+  if(type===2){
+    const x=randomInt(2,20);
+    const y=randomInt(2,10);
+    const answer=x*y;
+    return {
+      visual:"✖️🔢",
+      text:`Berapakah ${x} × ${y}?`,
+      answer:String(answer),
+      options:[String(answer),String(answer+y),String(answer-x),String(answer+10)],
+      explanation:`${x} kelompok masing-masing ${y} menghasilkan ${answer}.`
+    };
+  }
+
+  const divisor=randomInt(2,9);
+  const answer=randomInt(2,15);
+  const dividend=divisor*answer;
+  return {
+    visual:"➗🔢",
+    text:`Berapakah ${dividend} ÷ ${divisor}?`,
+    answer:String(answer),
+    options:[String(answer),String(answer+1),String(answer-1),String(answer+2)],
+    explanation:`${dividend} dibagi ${divisor} sama dengan ${answer}.`
+  };
+}
+
+/* ---------- ENGLISH ---------- */
+
+function englishQuestion(grade,hots,n){
+  const bank=[
+    ["What is the meaning of “book”?","buku",["buku","meja","kursi","papan"]],
+    ["What is the opposite of “big”?","small",["small","long","fast","high"]],
+    ["Choose the correct greeting in the morning.","Good morning",["Good morning","Good night","Good bye","Thank you"]],
+    ["What is the English word for “sekolah”?","school",["school","market","house","garden"]],
+    ["Which one is a fruit?","apple",["apple","table","pencil","shoe"]]
+  ];
+
+  const item=bank[n%bank.length];
+
+  if(hots){
+    return {
+      visual:"🇬🇧🧠",
+      text:"Rina wants to borrow a book politely from her friend. Which sentence is most appropriate?",
+      answer:"May I borrow your book, please?",
+      options:[
+        "May I borrow your book, please?",
+        "Give me your book!",
+        "Book now!",
+        "You book me!"
+      ],
+      explanation:"“May I... please?” is a polite way to ask permission."
+    };
+  }
+
+  return {
+    visual:"🇬🇧🔤",
+    text:item[0],
+    answer:item[1],
+    options:item[2],
+    explanation:`The correct answer is “${item[1]}”.`
+  };
+}
+
+/* ---------- ARABIC ---------- */
+
+function arabicQuestion(grade,hots,n){
+  const bank=[
+    ["Apa arti كِتَابٌ ?","Buku",["Buku","Rumah","Sekolah","Guru"]],
+    ["Apa arti مَدْرَسَةٌ ?","Sekolah",["Sekolah","Masjid","Pasar","Rumah"]],
+    ["Apa arti مُعَلِّمٌ ?","Guru",["Guru","Siswa","Buku","Meja"]],
+    ["Apa arti قَلَمٌ ?","Pena",["Pena","Tas","Papan","Kursi"]]
+  ];
+  const item=bank[n%bank.length];
+
+  if(hots){
+    return {
+      visual:"🕌📖🧠",
+      text:"Jika seorang siswa ingin mengatakan “Saya membaca buku” dalam konteks pembelajaran Bahasa Arab, kata yang berhubungan dengan “buku” adalah...",
+      answer:"كِتَابٌ",
+      options:["كِتَابٌ","قَلَمٌ","مَدْرَسَةٌ","مُعَلِّمٌ"],
+      explanation:"كِتَابٌ berarti buku."
+    };
+  }
+
+  return {
+    visual:"🕌🔤",
+    text:item[0],
+    answer:item[1],
+    options:item[2],
+    explanation:`${item[0].replace("Apa arti ","")} berarti ${item[1]}.`
+  };
+}
+
+/* ---------- IPA ---------- */
+
+function scienceQuestion(grade,hots,n){
+  const bank=[
+    ["Organ tubuh yang digunakan untuk bernapas adalah...","Paru-paru",["Paru-paru","Lambung","Jantung","Ginjal"]],
+    ["Sumber energi utama bagi bumi adalah...","Matahari",["Matahari","Bulan","Angin","Tanah"]],
+    ["Air yang berubah menjadi uap mengalami proses...","Penguapan",["Penguapan","Pembekuan","Pencairan","Pengembunan"]],
+    ["Hewan yang mengalami metamorfosis sempurna adalah...","Kupu-kupu",["Kupu-kupu","Kucing","Ayam","Sapi"]]
+  ];
+  const item=bank[n%bank.length];
+
+  if(hots){
+    return {
+      visual:"🔬🌱🧠",
+      text:"Tanaman di tempat A mendapat cukup cahaya, sedangkan tanaman di tempat B berada di ruangan gelap. Tanaman mana yang lebih mungkin tumbuh sehat dan mengapa?",
+      answer:"Tanaman A, karena mendapat cahaya untuk fotosintesis.",
+      options:[
+        "Tanaman A, karena mendapat cahaya untuk fotosintesis.",
+        "Tanaman B, karena tidak membutuhkan cahaya.",
+        "Keduanya pasti sama.",
+        "Tanaman B, karena gelap mempercepat fotosintesis."
+      ],
+      explanation:"Cahaya dibutuhkan tumbuhan untuk proses fotosintesis."
+    };
+  }
+
+  return {
+    visual:"🔬🌎",
+    text:item[0],
+    answer:item[1],
+    options:item[2],
+    explanation:`Jawaban benar: ${item[1]}.`
+  };
+}
+
+/* ---------- IPS ---------- */
+
+function socialQuestion(grade,hots,n){
+  const bank=[
+    ["Kegiatan membeli dan menjual barang disebut...","Perdagangan",["Perdagangan","Produksi","Konsumsi","Distribusi"]],
+    ["Peta digunakan untuk menunjukkan...","Kenampakan suatu wilayah",["Kenampakan suatu wilayah","Rasa makanan","Suara","Suhu tubuh"]],
+    ["Kegiatan menghasilkan barang disebut...","Produksi",["Produksi","Konsumsi","Rekreasi","Komunikasi"]],
+    ["Indonesia dikenal sebagai negara...","Kepulauan",["Kepulauan","Benua","Kutub","Gurun"]]
+  ];
+  const item=bank[n%bank.length];
+
+  if(hots){
+    return {
+      visual:"🌏📊🧠",
+      text:"Sebuah daerah memiliki hasil pertanian melimpah tetapi akses jalan menuju pasar buruk. Dampak yang paling mungkin terjadi adalah...",
+      answer:"Distribusi hasil pertanian menjadi kurang lancar.",
+      options:[
+        "Distribusi hasil pertanian menjadi kurang lancar.",
+        "Produksi otomatis berhenti selamanya.",
+        "Harga semua barang pasti turun.",
+        "Masyarakat tidak membutuhkan pasar."
+      ],
+      explanation:"Akses transportasi memengaruhi kelancaran distribusi barang."
+    };
+  }
+
+  return {
+    visual:"🌏🧭",
+    text:item[0],
+    answer:item[1],
+    options:item[2],
+    explanation:`Konsep IPS yang tepat adalah ${item[1]}.`
+  };
+}
+
+/* ---------- INDONESIAN ---------- */
+
+function indonesiaQuestion(grade,hots,n){
+  const bank=[
+    ["Antonim kata “besar” adalah...","kecil",["kecil","panjang","tinggi","luas"]],
+    ["Kalimat tanya biasanya diakhiri tanda...","?",["?","!",";","."]],
+    ["Kata yang digunakan untuk menyebut orang, tempat atau benda disebut...","kata benda",["kata benda","kata kerja","kata sifat","kata hubung"]],
+    ["Cerita yang tokohnya berupa hewan disebut...","fabel",["fabel","biografi","berita","surat"]]
+  ];
+  const item=bank[n%bank.length];
+
+  if(hots){
+    return {
+      visual:"📚🧠✍️",
+      text:"Bacalah: “Hujan turun deras sehingga halaman sekolah menjadi tergenang.” Hubungan antarklausa pada kalimat tersebut menunjukkan...",
+      answer:"Hubungan sebab-akibat.",
+      options:[
+        "Hubungan sebab-akibat.",
+        "Hubungan pertentangan.",
+        "Hubungan pilihan.",
+        "Hubungan perbandingan."
+      ],
+      explanation:"Hujan deras menjadi sebab, sedangkan halaman tergenang menjadi akibat."
+    };
+  }
+
+  return {
+    visual:"📚✍️",
+    text:item[0],
+    answer:item[1],
+    options:item[2],
+    explanation:`Jawaban yang tepat adalah ${item[1]}.`
+  };
+}
+
+/* ---------- PKN ---------- */
+
+function civicQuestion(grade,hots,n){
+  const bank=[
+    ["Dasar negara Indonesia adalah...","Pancasila",["Pancasila","UUD","Bhinneka Tunggal Ika","Proklamasi"]],
+    ["Semboyan bangsa Indonesia adalah...","Bhinneka Tunggal Ika",["Bhinneka Tunggal Ika","Tut Wuri Handayani","Indonesia Raya","Garuda Pancasila"]],
+    ["Musyawarah dilakukan untuk mencapai...","Mufakat",["Mufakat","Perselisihan","Persaingan","Hukuman"]],
+    ["Lambang negara Indonesia adalah...","Garuda Pancasila",["Garuda Pancasila","Harimau","Komodo","Rajawali"]]
+  ];
+  const item=bank[n%bank.length];
+
+  if(hots){
+    return {
+      visual:"🇮🇩🤝🧠",
+      text:"Dalam kerja kelompok terdapat dua pendapat berbeda. Sikap yang paling sesuai nilai musyawarah adalah...",
+      answer:"Mendengarkan semua pendapat lalu mencari kesepakatan.",
+      options:[
+        "Mendengarkan semua pendapat lalu mencari kesepakatan.",
+        "Memaksakan pendapat sendiri.",
+        "Meninggalkan kelompok.",
+        "Mengabaikan anggota lain."
+      ],
+      explanation:"Musyawarah mengutamakan penghargaan terhadap pendapat dan kesepakatan bersama."
+    };
+  }
+
+  return {
+    visual:"🇮🇩🏛️",
+    text:item[0],
+    answer:item[1],
+    options:item[2],
+    explanation:`Jawaban yang benar adalah ${item[1]}.`
+  };
+}
+
+/* ---------- PJOK ---------- */
+
+function sportQuestion(grade,hots,n){
+  const bank=[
+    ["Sebelum olahraga sebaiknya melakukan...","Pemanasan",["Pemanasan","Tidur","Makan banyak","Duduk diam"]],
+    ["Contoh olahraga untuk melatih daya tahan adalah...","Lari",["Lari","Membaca","Menggambar","Tidur"]],
+    ["Minum air setelah aktivitas fisik membantu mencegah...","Dehidrasi",["Dehidrasi","Kantuk","Lapar","Bosan"]],
+    ["Gerakan menekuk dan meluruskan tangan termasuk latihan...","Kekuatan",["Kekuatan","Pendengaran","Penglihatan","Ingatan"]]
+  ];
+  const item=bank[n%bank.length];
+
+  if(hots){
+    return {
+      visual:"⚽🏃🧠",
+      text:"Seorang siswa ingin meningkatkan kebugaran tetapi sering langsung berlari cepat tanpa pemanasan. Perubahan yang paling tepat adalah...",
+      answer:"Melakukan pemanasan sebelum latihan.",
+      options:[
+        "Melakukan pemanasan sebelum latihan.",
+        "Berhenti berolahraga selamanya.",
+        "Mengurangi minum air.",
+        "Berolahraga hanya sekali setahun."
+      ],
+      explanation:"Pemanasan mempersiapkan tubuh sebelum aktivitas fisik."
+    };
+  }
+
+  return {
+    visual:"⚽🏃",
+    text:item[0],
+    answer:item[1],
+    options:item[2],
+    explanation:`Jawaban yang tepat adalah ${item[1]}.`
+  };
+}
+
+/* ---------- TIK ---------- */
+
+function tikQuestion(grade,hots,n){
+  const bank=[
+    ["Perangkat untuk mengetik adalah...","Keyboard",["Keyboard","Monitor","Speaker","Printer"]],
+    ["Perangkat untuk menampilkan gambar adalah...","Monitor",["Monitor","Keyboard","Mouse","Mikrofon"]],
+    ["Program untuk mengolah angka dan tabel adalah...","Spreadsheet",["Spreadsheet","Browser","Pemutar musik","Kamera"]],
+    ["Internet digunakan untuk...","Mengakses dan bertukar informasi",["Mengakses dan bertukar informasi","Mencuci tangan","Memasak","Berolahraga"]]
+  ];
+  const item=bank[n%bank.length];
+
+  if(hots){
+    return {
+      visual:"💻🔐🧠",
+      text:"Kamu menerima pesan berisi tautan mencurigakan yang meminta password akun. Tindakan paling aman adalah...",
+      answer:"Tidak membuka tautan dan tidak memberikan password.",
+      options:[
+        "Tidak membuka tautan dan tidak memberikan password.",
+        "Memberikan password agar akun aman.",
+        "Menyebarkan tautan kepada teman.",
+        "Mengirim semua data pribadi."
+      ],
+      explanation:"Password dan data pribadi harus dijaga. Tautan mencurigakan sebaiknya tidak dibuka."
+    };
+  }
+
+  return {
+    visual:"💻🌐",
+    text:item[0],
+    answer:item[1],
+    options:item[2],
+    explanation:`Jawaban benar: ${item[1]}.`
+  };
+}
+
+/* ---------- GENERIC ---------- */
+
+function genericQuestion(subject,grade,hots,n){
+  const icon=SUBJECT_ICONS[subject]||"📚";
+
+  const banks={
+    "Qur'an Hadist":[
+      ["Al-Qur'an diturunkan sebagai...","Petunjuk bagi manusia",["Petunjuk bagi manusia","Buku cerita","Peta","Kamus"]],
+      ["Membaca Al-Qur'an sebaiknya dilakukan dengan...","Tartil",["Tartil","Tergesa-gesa","Bercanda","Berteriak"]]
+    ],
+    "SKI":[
+      ["SKI merupakan singkatan dari...","Sejarah Kebudayaan Islam",["Sejarah Kebudayaan Islam","Sains Kebudayaan Indonesia","Sekolah Keagamaan Islam","Sejarah Kelas Indonesia"]],
+      ["Mempelajari sejarah dapat membantu kita...","Mengambil pelajaran dari masa lalu",["Mengambil pelajaran dari masa lalu","Melupakan masa lalu","Menghapus sejarah","Menghindari belajar"]]
+    ],
+    "Akidah Akhlak":[
+      ["Akhlak terpuji disebut juga...","Akhlakul karimah",["Akhlakul karimah","Akhlak mazmumah","Kebiasaan buruk","Perilaku tercela"]],
+      ["Contoh sikap jujur adalah...","Berkata sesuai kenyataan",["Berkata sesuai kenyataan","Menipu","Berbohong","Menyembunyikan kesalahan orang lain"]]
+    ],
+    "Seni Budaya":[
+      ["Kegiatan membuat karya seni disebut...","Berkarya",["Berkarya","Berhitung","Berlari","Berdagang"]],
+      ["Warna merah, kuning dan biru termasuk warna...","Primer",["Primer","Sekunder","Netral","Gelap"]]
+    ],
+    "Seni Musik":[
+      ["Alat musik yang dimainkan dengan cara dipukul adalah...","Gendang",["Gendang","Seruling","Biola","Gitar"]],
+      ["Panjang pendek bunyi dalam musik berkaitan dengan...","Ritme",["Ritme","Warna","Gambar","Ukuran"]]
+    ],
+    "Bahasa Sunda":[
+      ["Kecap “hatur nuhun” hartina...","Terima kasih",["Terima kasih","Selamat pagi","Permisi","Sampai jumpa"]],
+      ["Basa Sunda dipaké ku masarakat utamana di wilayah...","Jawa Barat",["Jawa Barat","Papua","Bali","Sumatra Utara"]]
+    ],
+    "BTQ":[
+      ["Membaca Al-Qur'an sesuai kaidah tajwid bertujuan agar...","Bacaan menjadi benar",["Bacaan menjadi benar","Bacaan semakin cepat","Bacaan semakin panjang","Bacaan tidak terdengar"]],
+      ["Huruf hijaiyah merupakan...","Huruf Arab",["Huruf Arab","Huruf Latin","Angka","Simbol matematika"]]
+    ],
+    "PAI":[
+      ["Rukun Islam berjumlah...","5",["5","4","6","7"]],
+      ["Salat wajib sehari semalam berjumlah...","5 waktu",["5 waktu","3 waktu","7 waktu","10 waktu"]]
+    ]
+  };
+
+  const bank=banks[subject] || [
+    [`Apa tujuan mempelajari ${subject}?`,"Menambah pengetahuan dan keterampilan",[
+      "Menambah pengetahuan dan keterampilan",
+      "Mengurangi pengetahuan",
+      "Menghindari pembelajaran",
+      "Tidak melakukan apa-apa"
+    ]],
+    [`Dalam pembelajaran ${subject}, sikap yang baik adalah...`,"Aktif dan bertanggung jawab",[
+      "Aktif dan bertanggung jawab",
+      "Pasif selamanya",
+      "Mengganggu teman",
+      "Tidak mengerjakan tugas"
+    ]]
+  ];
+
+  if(hots){
+    return {
+      visual:`${icon}🧠🔥`,
+      text:`Seorang peserta didik menemukan masalah yang berkaitan dengan ${subject}. Ia membandingkan beberapa informasi sebelum mengambil keputusan. Sikap tersebut menunjukkan...`,
+      answer:"Penalaran kritis",
+      options:["Penalaran kritis","Meniru tanpa memahami","Menghafal tanpa berpikir","Mengabaikan informasi"],
+      explanation:"Membandingkan informasi sebelum mengambil keputusan merupakan bagian dari penalaran kritis."
+    };
+  }
+
+  const item=bank[n%bank.length];
+
+  return {
+    visual:`${icon}📚`,
+    text:item[0],
+    answer:item[1],
+    options:item[2],
+    explanation:`Jawaban yang benar adalah ${item[1]}.`
+  };
+}
+
+/* =========================================================
+   RENDER QUESTION
+========================================================= */
+
+function renderQuestion(){
+  if(state.index>=state.questions.length){
+    finishGame();
+    return;
+  }
+
+  const q=state.questions[state.index];
+
+  document.getElementById("questionNumber").textContent=state.index+1;
+  document.getElementById("scoreDisplay").textContent=state.score;
+  document.getElementById("progressBar").style.width=((state.index+1)/50*100)+"%";
+  document.getElementById("questionType").textContent=questionTypeName(q.mode);
+
+  const hot=document.getElementById("hotsBadge");
+  hot.classList.toggle("hidden",!q.hots);
+
+  document.getElementById("visualQuestion").innerHTML=`
+    <div class="rounded-3xl bg-gradient-to-br from-teal-50 via-white to-amber-50 min-h-[130px] grid place-items-center border border-white">
+      <div class="text-7xl md:text-8xl float">${q.visual}</div>
+    </div>
+  `;
+
+  document.getElementById("questionText").textContent=q.text;
+
+  const grid=document.getElementById("answerGrid");
+  grid.innerHTML="";
+
+  q.options.forEach((option,i)=>{
+    const div=document.createElement("div");
+    div.className="answer-card glass bg-white rounded-3xl border-2 border-slate-100 p-5 flex items-center gap-4 card-hover pop";
+    div.innerHTML=`
+      <div class="w-11 h-11 rounded-2xl bg-slate-100 grid place-items-center font-black">
+        ${String.fromCharCode(65+i)}
+      </div>
+      <div class="text-3xl">${option.icon}</div>
+      <div class="font-bold text-slate-700 flex-1">${escapeHTML(option.text)}</div>
+    `;
+    div.onclick=()=>answerQuestion(option.text,div);
+    grid.appendChild(div);
+  });
+
+  const feedback=document.getElementById("feedbackBox");
+  feedback.classList.add("hidden");
+
+  resetTimer();
+  updateLives();
+}
+
+function questionTypeName(mode){
+  return {
+    cerdas:"🏆 CERDAS CERMAT",
+    iq:"🧠 IQ & TEKA-TEKI",
+    gambar:"🖼️ TEMUKAN GAMBAR",
+    puzzle:"🧩 PUZZLE",
+    millionaire:"💰 MILLIONAIRE",
+    spelling:"🔤 SPELLING TEST"
+  }[mode] || "🎮 CHALLENGE";
+}
+
+/* =========================================================
+   ANSWER
+========================================================= */
+
+function answerQuestion(selected,element){
+  if(document.getElementById("feedbackBox").classList.contains("answered")) return;
+
+  clearInterval(state.timer);
+
+  const q=state.questions[state.index];
+  const all=document.querySelectorAll(".answer-card");
+
+  all.forEach(x=>x.style.pointerEvents="none");
+
+  const correct=selected===q.answer;
+
+  state.answers.push({
+    no:state.index+1,
+    question:q.text,
+    answer:selected,
+    key:q.answer,
+    correct,
+    hots:q.hots,
+    explanation:q.explanation
+  });
+
+  if(correct){
+    state.correct++;
+    const points=q.hots?250:100;
+    state.score+=points;
+    if(q.hots) state.hotsCorrect++;
+
+    element.classList.add("correct-answer","correct");
+    feedback(true,q.explanation,points);
+    playCorrectSound();
+    celebrate();
+  }else{
+    state.wrong++;
+    state.lives=Math.max(0,state.lives-1);
+    element.classList.add("wrong-answer","wrong");
+
+    all.forEach(x=>{
+      const txt=x.querySelector(".flex-1")?.textContent;
+      if(txt===q.answer) x.classList.add("correct-answer");
+    });
+
+    feedback(false,`Jawaban yang benar: ${q.answer}. ${q.explanation}`,0);
+    playWrongSound();
+  }
+
+  document.getElementById("feedbackBox").classList.add("answered");
+  updateLives();
+
+  if(state.lives<=0){
+    setTimeout(()=>finishGame(),1400);
+  }
+}
+
+function feedback(correct,text,points){
+  const box=document.getElementById("feedbackBox");
+  const icon=document.getElementById("feedbackIcon");
+  const title=document.getElementById("feedbackTitle");
+
+  box.classList.remove("hidden");
+  box.classList.remove("answered");
+
+  if(correct){
+    box.className="mt-6 rounded-3xl p-5 pop bg-emerald-50 border border-emerald-200";
+    icon.textContent="🎉";
+    title.textContent=`BENAR! +${points} poin`;
+    title.className="font-black text-xl text-emerald-700";
+  }else{
+    box.className="mt-6 rounded-3xl p-5 pop bg-red-50 border border-red-200";
+    icon.textContent="😢";
+    title.textContent="BELUM TEPAT";
+    title.className="font-black text-xl text-red-700";
+  }
+
+  document.getElementById("feedbackText").textContent=text;
+}
+
+function nextQuestion(){
+  state.index++;
+  renderQuestion();
+}
+
+/* =========================================================
+   TIMER
+========================================================= */
+
+function resetTimer(){
+  clearInterval(state.timer);
+  state.timeLeft=30;
+  updateTimer();
+
+  state.timer=setInterval(()=>{
+    state.timeLeft--;
+    updateTimer();
+
+    if(state.timeLeft<=0){
+      clearInterval(state.timer);
+      timeOut();
+    }
+  },1000);
+}
+
+function updateTimer(){
+  const el=document.getElementById("timerDisplay");
+  const box=document.getElementById("timerBox");
+  el.textContent=state.timeLeft;
+  box.classList.toggle("timer-danger",state.timeLeft<=8);
+}
+
+function timeOut(){
+  const q=state.questions[state.index];
+
+  state.lives=Math.max(0,state.lives-1);
+  state.wrong++;
+
+  state.answers.push({
+    no:state.index+1,
+    question:q.text,
+    answer:"WAKTU HABIS",
+    key:q.answer,
+    correct:false,
+    hots:q.hots,
+    explanation:q.explanation
+  });
+
+  document.querySelectorAll(".answer-card").forEach(x=>x.style.pointerEvents="none");
+
+  document.querySelectorAll(".answer-card").forEach(x=>{
+    const txt=x.querySelector(".flex-1")?.textContent;
+    if(txt===q.answer) x.classList.add("correct-answer");
+  });
+
+  feedback(false,`Waktu habis. Jawaban yang benar: ${q.answer}. ${q.explanation}`,0);
+  playWrongSound();
+  updateLives();
+
+  if(state.lives<=0){
+    setTimeout(finishGame,1400);
+  }
+}
+
+function updateLives(){
+  document.getElementById("livesDisplay").textContent="❤️".repeat(state.lives)+"🖤".repeat(5-state.lives);
+}
+
+/* =========================================================
+   FINISH
+========================================================= */
+
+function finishGame(){
+  clearInterval(state.timer);
+  stopMusic();
+
+  const percent=Math.round((state.correct/50)*100);
+  const duration=Math.round((Date.now()-state.startTime)/1000);
+
+  document.getElementById("resultName").textContent=state.player;
+  document.getElementById("finalScore").textContent=state.score;
+  document.getElementById("finalCorrect").textContent=`${state.correct}/50`;
+  document.getElementById("finalHots").textContent=`${state.hotsCorrect}/20`;
+  document.getElementById("finalPercent").textContent=percent+"%";
+  document.getElementById("finalLives").textContent=state.lives;
+
+  let msg="Terus berlatih! Setiap tantangan adalah kesempatan untuk berkembang.";
+  if(percent>=90) msg="Luar biasa! Kamu adalah Master EduSmart! 🏆";
+  else if(percent>=75) msg="Hebat! Penguasaan materi kamu sangat baik. 🌟";
+  else if(percent>=60) msg="Bagus! Tingkatkan lagi latihanmu. 💪";
+
+  document.getElementById("resultMessage").textContent=msg;
+
+  saveLeaderboard({
+    name:state.player,
+    level:state.level,
+    grade:state.grade,
+    subject:state.subject,
+    score:state.score,
+    correct:state.correct,
+    percent,
+    hots:state.hotsCorrect,
+    date:new Date().toLocaleString("id-ID")
+  });
+
+  renderLeaderboard();
+  showResult();
+}
+
+function quitGame(){
+  if(confirm("Keluar dari permainan? Progress saat ini akan berakhir.")){
+    clearInterval(state.timer);
+    stopMusic();
+    showHome();
+  }
+}
+
+/* =========================================================
+   LEADERBOARD
+========================================================= */
+
+function getLeaderboard(){
+  try{
+    return JSON.parse(localStorage.getItem("edusmart_leaderboard")||"[]");
+  }catch(e){return []}
+}
+
+function saveLeaderboard(data){
+  const list=getLeaderboard();
+  list.push(data);
+  list.sort((a,b)=>b.score-a.score);
+  localStorage.setItem("edusmart_leaderboard",JSON.stringify(list.slice(0,30)));
+}
+
+function renderLeaderboard(){
+  const list=getLeaderboard();
+
+  if(!list.length){
+    document.getElementById("leaderboardTable").innerHTML=
+      `<div class="text-center py-8 text-slate-400">Belum ada data permainan.</div>`;
+    return;
+  }
+
+  document.getElementById("leaderboardTable").innerHTML=`
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b text-left">
+          <th class="p-3">#</th>
+          <th class="p-3">Pemain</th>
+          <th class="p-3">Jenjang</th>
+          <th class="p-3">Mapel</th>
+          <th class="p-3">Skor</th>
+          <th class="p-3">Benar</th>
+          <th class="p-3">HOTS</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map((x,i)=>`
+          <tr class="border-b hover:bg-slate-50">
+            <td class="p-3 font-black">${i<3?["🥇","🥈","🥉"][i]:i+1}</td>
+            <td class="p-3 font-black">${escapeHTML(x.name)}</td>
+            <td class="p-3">${escapeHTML(x.level)} Kelas ${escapeHTML(x.grade)}</td>
+            <td class="p-3">${SUBJECT_ICONS[x.subject]||"📚"} ${escapeHTML(x.subject)}</td>
+            <td class="p-3 font-black text-teal-700">${x.score}</td>
+            <td class="p-3">${x.correct}/50</td>
+            <td class="p-3">${x.hots}/20</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function clearLeaderboard(){
+  if(confirm("Hapus seluruh leaderboard lokal?")){
+    localStorage.removeItem("edusmart_leaderboard");
+    renderLeaderboard();
+    toast("🗑️","Leaderboard dihapus.");
+  }
+}
+
+/* =========================================================
+   EXCEL GAME RESULT
+========================================================= */
+
+function downloadGameExcel(){
+  if(typeof XLSX==="undefined"){
+    alert("Library Excel belum tersedia. Pastikan perangkat terhubung ke internet.");
+    return;
+  }
+
+  const rows=state.answers.map(x=>({
+    "No":x.no,
+    "Nama Siswa":state.player,
+    "Jenjang":state.level,
+    "Kelas":state.grade,
+    "Mata Pelajaran":state.subject,
+    "Pertanyaan":x.question,
+    "Jawaban Siswa":x.answer,
+    "Kunci Jawaban":x.key,
+    "Benar":x.correct?"YA":"TIDAK",
+    "HOTS":x.hots?"YA":"TIDAK",
+    "Penjelasan":x.explanation
+  }));
+
+  rows.push({});
+  rows.push({
+    "No":"",
+    "Nama Siswa":state.player,
+    "Jenjang":state.level,
+    "Kelas":state.grade,
+    "Mata Pelajaran":state.subject,
+    "Pertanyaan":"REKAP",
+    "Jawaban Siswa":`Skor ${state.score}`,
+    "Kunci Jawaban":`${state.correct}/50 benar`,
+    "Benar":`${Math.round(state.correct/50*100)}%`,
+    "HOTS":`${state.hotsCorrect}/20`
+  });
+
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws["!cols"]=[
+    {wch:6},{wch:20},{wch:14},{wch:10},{wch:22},
+    {wch:60},{wch:30},{wch:30},{wch:12},{wch:12},{wch:60}
+  ];
+  XLSX.utils.book_append_sheet(wb,ws,"Hasil Permainan");
+
+  XLSX.writeFile(
+    wb,
+    `Hasil_EduSmart_${safeFileName(state.player)}_${Date.now()}.xlsx`
+  );
+}
+
+/* =========================================================
+   ADMIN / LOGIN
+========================================================= */
+
+function openLogin(){
+  document.getElementById("loginModal").classList.remove("hidden");
+  document.getElementById("loginUser").focus();
+}
+
+function closeLogin(){
+  document.getElementById("loginModal").classList.add("hidden");
+  document.getElementById("loginError").classList.add("hidden");
+}
+
+function developerLogin(){
+  const user=document.getElementById("loginUser").value.trim();
+  const pass=document.getElementById("loginPass").value;
+
+  if(user==="Ahmad Mahdi" && pass==="solawat89"){
+    closeLogin();
+    showAdmin();
+    toast("🔓","Akses pengembang berhasil.");
+  }else{
+    document.getElementById("loginError").classList.remove("hidden");
+  }
+}
+
+/* =========================================================
+   ADMIN CONTENT
+========================================================= */
+
+function renderProfile(){
+  document.getElementById("profileDimensions").innerHTML=
+    PROFILE_DIMENSIONS.map(x=>`
+      <div class="bg-white rounded-2xl p-4 border">
+        <div class="text-3xl">${x[0]}</div>
+        <div class="font-black mt-2">${x[1]}</div>
+        <div class="text-xs text-slate-500 mt-1">${x[2]}</div>
+      </div>
+    `).join("");
+}
+
+function renderDeepLearning(){
+  document.getElementById("deepLearningCards").innerHTML=
+    DEEP_LEARNING.map(x=>`
+      <div class="rounded-3xl bg-white border p-5 card-hover">
+        <div class="text-xs font-black text-teal-600">${x[0]}</div>
+        <div class="font-black text-lg mt-1">${x[1]}</div>
+        <div class="text-sm text-slate-500 mt-2">${x[2]}</div>
+      </div>
+    `).join("");
+}
+
+function renderDocuments(){
+  document.getElementById("documentGrid").innerHTML=
+    DOC_TYPES.map((d,i)=>`
+      <div class="rounded-3xl bg-white border p-5 card-hover">
+        <div class="flex items-start justify-between gap-3">
+          <div class="text-4xl">${d.icon}</div>
+          <span class="text-xs font-black px-3 py-1 rounded-full ${d.type==="word"?"bg-blue-50 text-blue-700":"bg-emerald-50 text-emerald-700"}">
+            ${d.type==="word"?"WORD":"EXCEL"}
+          </span>
+        </div>
+        <h4 class="font-black text-lg mt-4">${d.name}</h4>
+        <p class="text-sm text-slate-500 mt-1 min-h-[42px]">${d.desc}</p>
+        <div class="grid grid-cols-2 gap-2 mt-4">
+          <button onclick="downloadTeachingDocument(${i})" class="rounded-xl bg-slate-900 text-white py-2 text-sm font-black">
+            ⬇️ Download
+          </button>
+          <label class="rounded-xl bg-teal-50 text-teal-700 py-2 text-sm font-black text-center cursor-pointer">
+            📤 Upload
+            <input type="file" class="hidden" accept=".doc,.docx,.xls,.xlsx" onchange="handleQuickUpload(event,'${escapeHTML(d.name)}')">
+          </label>
+        </div>
+      </div>
+    `).join("");
+}
+
+/* =========================================================
+   WORD DOCUMENT GENERATOR
+========================================================= */
+
+async function downloadTeachingDocument(index){
+  const doc=DOC_TYPES[index];
+  const level=document.getElementById("adminLevel").value;
+  const grade=document.getElementById("adminClass").value.replace("Kelas ","");
+  const subject=document.getElementById("adminSubject").value.replace(/^\\S+\\s/,"");
+
+  if(doc.type==="excel"){
+    downloadTeachingExcel(doc.name,level,grade,subject);
+    return;
+  }
+
+  if(typeof window.docx==="undefined"){
+    alert("Library Word belum tersedia. Pastikan perangkat terhubung ke internet.");
+    return;
+  }
+
+  const {
+    Document,
+    Packer,
+    Paragraph,
+    TextRun,
+    HeadingLevel,
+    AlignmentType,
+    Table,
+    TableRow,
+    TableCell,
+    WidthType
+  }=window.docx;
+
+  const title=`${doc.name} — Kurikulum Merdeka`;
+  const children=[];
+
+  children.push(new Paragraph({
+    text:"EDUSMART ADVENTURE",
+    heading:HeadingLevel.TITLE,
+    alignment:AlignmentType.CENTER
+  }));
+
+  children.push(new Paragraph({
+    text:title,
+    heading:HeadingLevel.HEADING_1,
+    alignment:AlignmentType.CENTER
+  }));
+
+  children.push(new Paragraph({
+    text:"Tahun Ajaran 2026/2027",
+    alignment:AlignmentType.CENTER
+  }));
+
+  children.push(new Paragraph({
+    text:`Jenjang: ${level} | Kelas: ${grade} | Mata Pelajaran: ${subject}`,
+    alignment:AlignmentType.CENTER
+  }));
+
+  children.push(new Paragraph({text:""}));
+
+  children.push(new Paragraph({
+    text:"Identitas Sekolah",
+    heading:HeadingLevel.HEADING_2
+  }));
+
+  children.push(new Paragraph({
+    text:"Nama Sekolah : ______________________________"
+  }));
+  children.push(new Paragraph({
+    text:"Nama Guru    : ______________________________"
+  }));
+  children.push(new Paragraph({
+    text:"Kepala Sekolah: ______________________________"
+  }));
+
+  children.push(new Paragraph({
+    text:"",
+  }));
+
+  children.push(new Paragraph({
+    text:"Kurikulum dan Pendekatan",
+    heading:HeadingLevel.HEADING_2
+  }));
+
+  children.push(new Paragraph({
+    text:"Dokumen disusun berdasarkan Kurikulum Merdeka TA 2026/2027 dengan penguatan Pembelajaran Mendalam (Deep Learning), Profil Lulusan dan Kurikulum Berbasis Cinta (KBC)."
+  }));
+
+  children.push(new Paragraph({
+    text:"",
+  }));
+
+  children.push(new Paragraph({
+    text:"8 Dimensi Profil Lulusan",
+    heading:HeadingLevel.HEADING_2
+  }));
+
+  PROFILE_DIMENSIONS.forEach((x,i)=>{
+    children.push(new Paragraph({
+      text:`${i+1}. ${x[1]} — ${x[2]}`,
+      bullet:{level:0}
+    }));
+  });
+
+  children.push(new Paragraph({
+    text:"Kerangka Pembelajaran Mendalam 8-3-3-4 & KBC",
+    heading:HeadingLevel.HEADING_2
+  }));
+
+  DEEP_LEARNING.forEach(x=>{
+    children.push(new Paragraph({
+      text:`${x[0]}. ${x[1]} — ${x[2]}`,
+      bullet:{level:0}
+    }));
+  });
+
+  children.push(new Paragraph({
+    text:"",
+  }));
+
+  children.push(new Paragraph({
+    text:`Komponen ${doc.name}`,
+    heading:HeadingLevel.HEADING_2
+  }));
+
+  const components=getDocumentComponents(doc.name);
+
+  components.forEach((c,i)=>{
+    children.push(new Paragraph({
+      text:`${i+1}. ${c.title}`,
+      heading:HeadingLevel.HEADING_3
+    }));
+    children.push(new Paragraph({text:c.content}));
+  });
+
+  children.push(new Paragraph({
+    text:"",
+  }));
+
+  children.push(new Paragraph({
+    text:"Semester",
+    heading:HeadingLevel.HEADING_2
+  }));
+
+  children.push(new Paragraph({
+    text:"Semester 1: ______________________________________________"
+  }));
+  children.push(new Paragraph({
+    text:"Semester 2: ______________________________________________"
+  }));
+
+  children.push(new Paragraph({
+    text:"",
+  }));
+
+  children.push(new Paragraph({
+    text:"Catatan Pengembangan",
+    heading:HeadingLevel.HEADING_2
+  }));
+
+  children.push(new Paragraph({
+    text:"Dokumen ini merupakan template editable. Identitas sekolah, guru, materi, alokasi waktu, tujuan pembelajaran, aktivitas dan asesmen dapat disesuaikan dengan karakteristik satuan pendidikan."
+  }));
+
+  children.push(new Paragraph({
+    text:"© Ahmad Mahdi — EduSmart Adventure"
+  }));
+
+  const document=new Document({
+    sections:[{
+      properties:{},
+      children
+    }]
+  });
+
+  const blob=await Packer.toBlob(document);
+  downloadBlob(blob,`${safeFileName(doc.name)}_${level}_Kelas_${grade}_${safeFileName(subject)}.docx`);
+  toast("📄","Dokumen Word berhasil dibuat.");
+}
+
+function getDocumentComponents(name){
+  const common={
+    "Modul Ajar":[
+      {title:"Informasi Umum",content:"Identitas modul, kompetensi awal, sarana prasarana, target peserta didik dan model pembelajaran."},
+      {title:"Tujuan Pembelajaran",content:"Peserta didik mampu memahami, menerapkan, menganalisis dan merefleksikan materi sesuai capaian pembelajaran."},
+      {title:"Kegiatan Pembelajaran",content:"Kegiatan pendahuluan, inti dan penutup dengan prinsip berkesadaran, bermakna dan menggembirakan."},
+      {title:"Asesmen",content:"Asesmen diagnostik, formatif dan sumatif disertai rubrik."},
+      {title:"Remedial dan Pengayaan",content:"Strategi tindak lanjut berdasarkan hasil asesmen."}
+    ],
+    "ATP":[
+      {title:"Capaian Pembelajaran",content:"Tuliskan CP sesuai mata pelajaran dan jenjang."},
+      {title:"Alur Tujuan Pembelajaran",content:"Susun tujuan pembelajaran secara sistematis dari konsep sederhana menuju kompleks."},
+      {title:"Indikator Ketercapaian",content:"Rumusan kemampuan yang dapat diamati dan diukur."}
+    ],
+    "KKTP":[
+      {title:"Kriteria Ketercapaian",content:"Kriteria disusun berdasarkan tujuan pembelajaran dan karakteristik peserta didik."},
+      {title:"Rubrik",content:"Sangat Baik, Baik, Cukup dan Perlu Bimbingan."}
+    ],
+    "Promes":[
+      {title:"Semester 1",content:"Pemetaan materi, tujuan pembelajaran dan alokasi waktu semester 1."},
+      {title:"Semester 2",content:"Pemetaan materi, tujuan pembelajaran dan alokasi waktu semester 2."}
+    ],
+    "LKPD":[
+      {title:"Identitas Peserta Didik",content:"Nama, kelas, tanggal dan mata pelajaran."},
+      {title:"Petunjuk",content:"Petunjuk pengerjaan aktivitas."},
+      {title:"Aktivitas",content:"Mengamati, menanya, menyelidiki, menganalisis, menyimpulkan dan mengomunikasikan."},
+      {title:"Refleksi",content:"Apa yang saya pahami? Apa yang masih membingungkan? Bagaimana saya menerapkannya?"}
+    ],
+    "Media Pembelajaran":[
+      {title:"Tujuan Media",content:"Media dipilih untuk membantu peserta didik memahami konsep secara visual, interaktif dan kontekstual."},
+      {title:"Jenis Media",content:"Presentasi, video, infografis, permainan, simulasi, kartu atau media digital."}
+    ],
+    "CP Kemenag 046 + Kemendikbud":[
+      {title:"Capaian Pembelajaran",content:"Bagian ini disiapkan sebagai ruang pengisian CP sesuai regulasi dan dokumen resmi yang berlaku."},
+      {title:"Konteks Satuan Pendidikan",content:"Sesuaikan CP dengan karakteristik peserta didik dan satuan pendidikan."}
+    ],
+    "Soal + Kunci + Kisi-Kisi":[
+      {title:"Kisi-Kisi",content:"Materi, indikator, level kognitif, bentuk soal dan nomor soal."},
+      {title:"Soal",content:"Paket soal dapat dikembangkan menjadi pilihan ganda, isian, uraian dan HOTS."},
+      {title:"Kunci Jawaban",content:"Kunci jawaban dan pembahasan singkat."}
+    ]
+  };
+
+  return common[name] || [
+    {title:"Komponen Utama",content:"Susun komponen perangkat sesuai kebutuhan mata pelajaran, jenjang dan kelas."},
+    {title:"Semester 1 & 2",content:"Dokumen mencakup perencanaan pembelajaran untuk dua semester."},
+    {title:"Asesmen",content:"Gunakan asesmen diagnostik, formatif dan sumatif secara berkelanjutan."}
+  ];
+}
+
+/* =========================================================
+   EXCEL TEACHING DOCUMENT
+========================================================= */
+
+function downloadTeachingExcel(name,level,grade,subject){
+  if(typeof XLSX==="undefined"){
+    alert("Library Excel belum tersedia.");
+    return;
+  }
+
+  const wb=XLSX.utils.book_new();
+
+  const info=[
+    ["EDUSMART ADVENTURE"],
+    [name],
+    ["TA 2026/2027"],
+    ["Jenjang",level],
+    ["Kelas",grade],
+    ["Mata Pelajaran",subject],
+    [],
+    ["Komponen","Keterangan"],
+    ["Semester 1","________________________________________"],
+    ["Semester 2","________________________________________"],
+    ["Tujuan Pembelajaran","________________________________________"],
+    ["Materi","________________________________________"],
+    ["Alokasi Waktu","________________________________________"],
+    ["Asesmen","________________________________________"],
+    ["Catatan Guru","________________________________________"]
+  ];
+
+  const ws=XLSX.utils.aoa_to_sheet(info);
+  ws["!cols"]=[{wch:30},{wch:70}];
+
+  XLSX.utils.book_append_sheet(wb,ws,name.substring(0,31));
+
+  const profile=XLSX.utils.aoa_to_sheet([
+    ["8 DIMENSI PROFIL LULUSAN"],
+    ...PROFILE_DIMENSIONS.map(x=>[x[1],x[2]])
+  ]);
+  profile["!cols"]=[{wch:30},{wch:80}];
+  XLSX.utils.book_append_sheet(wb,profile,"Profil Lulusan");
+
+  const dl=XLSX.utils.aoa_to_sheet([
+    ["PEMBELAJARAN MENDALAM 8-3-3-4 & KBC"],
+    ...DEEP_LEARNING.map(x=>[x[0],x[1],x[2]])
+  ]);
+  dl["!cols"]=[{wch:10},{wch:30},{wch:80}];
+  XLSX.utils.book_append_sheet(wb,dl,"Deep Learning");
+
+  XLSX.writeFile(
+    wb,
+    `${safeFileName(name)}_${level}_Kelas_${grade}_${safeFileName(subject)}.xlsx`
+  );
+
+  toast("📊","Dokumen Excel berhasil dibuat.");
+}
+
+/* =========================================================
+   ASSESSMENT DOC
+========================================================= */
+
+async function downloadAssessmentDoc(){
+  if(typeof window.docx==="undefined"){
+    alert("Library Word belum tersedia.");
+    return;
+  }
+
+  const {
+    Document,Packer,Paragraph,HeadingLevel,AlignmentType
+  }=window.docx;
+
+  const level=document.getElementById("adminLevel").value;
+  const grade=document.getElementById("adminClass").value;
+  const subject=document.getElementById("adminSubject").value.replace(/^\\S+\\s/,"");
+  const student=document.getElementById("studentNameDoc").value||"________________";
+  const school=document.getElementById("schoolNameDoc").value||"________________";
+
+  const qs=[];
+  for(let i=0;i<20;i++){
+    const oldState={...state};
+    state.subject=subject;
+    state.grade=grade.replace("Kelas ","");
+    state.mode="cerdas";
+    qs.push(createGeneratedQuestion(i>=12,i));
+    state={...oldState};
+  }
+
+  const children=[
+    new Paragraph({text:"EDUSMART ADVENTURE",heading:HeadingLevel.TITLE,alignment:AlignmentType.CENTER}),
+    new Paragraph({text:"PAKET SOAL + KISI-KISI + KUNCI JAWABAN",heading:HeadingLevel.HEADING_1,alignment:AlignmentType.CENTER}),
+    new Paragraph({text:`${level} • ${grade} • ${subject}`,alignment:AlignmentType.CENTER}),
+    new Paragraph({text:""}),
+    new Paragraph({text:`Nama Sekolah: ${school}`}),
+    new Paragraph({text:`Nama Siswa: ${student}`}),
+    new Paragraph({text:`Kelas: ${grade}`}),
+    new Paragraph({text:""}),
+    new Paragraph({text:"KISI-KISI",heading:HeadingLevel.HEADING_2})
+  ];
+
+  qs.forEach((q,i)=>{
+    children.push(new Paragraph({
+      text:`${i+1}. Materi ${subject} — ${q.hots?"HOTS":"Pemahaman"} — Bentuk: Pilihan Ganda`
+    }));
+  });
+
+  children.push(new Paragraph({text:"SOAL",heading:HeadingLevel.HEADING_2}));
+
+  qs.forEach((q,i)=>{
+    children.push(new Paragraph({
+      text:`${i+1}. ${q.text}`,
+      heading:HeadingLevel.HEADING_3
+    }));
+
+    q.options.forEach((x,j)=>{
+      children.push(new Paragraph({
+        text:`${String.fromCharCode(65+j)}. ${x.text}`
+      }));
+    });
+  });
+
+  children.push(new Paragraph({text:"KUNCI JAWABAN & PEMBAHASAN",heading:HeadingLevel.HEADING_2}));
+
+  qs.forEach((q,i)=>{
+    children.push(new Paragraph({
+      text:`${i+1}. ${q.answer} — ${q.explanation}`
+    }));
+  });
+
+  children.push(new Paragraph({
+    text:"© Ahmad Mahdi — EduSmart Adventure"
+  }));
+
+  const document=new Document({
+    sections:[{children}]
+  });
+
+  const blob=await Packer.toBlob(document);
+
+  downloadBlob(
+    blob,
+    `Soal_Kunci_KisiKisi_${safeFileName(subject)}_${grade.replace(" ","_")}.docx`
+  );
+
+  toast("📄","Paket soal berhasil dibuat.");
+}
+
+/* =========================================================
+   ASSESSMENT EXCEL
+========================================================= */
+
+function downloadAssessmentExcel(){
+  if(typeof XLSX==="undefined"){
+    alert("Library Excel belum tersedia.");
+    return;
+  }
+
+  const level=document.getElementById("adminLevel").value;
+  const grade=document.getElementById("adminClass").value;
+  const subject=document.getElementById("adminSubject").value.replace(/^\\S+\\s/,"");
+
+  const rows=[];
+
+  for(let i=0;i<50;i++){
+    const oldSubject=state.subject;
+    const oldGrade=state.grade;
+
+    state.subject=subject;
+    state.grade=grade.replace("Kelas ","");
+
+    const q=createGeneratedQuestion(i>=30,i);
+
+    state.subject=oldSubject;
+    state.grade=oldGrade;
+
+    rows.push({
+      "No":i+1,
+      "Jenjang":level,
+      "Kelas":grade,
+      "Mata Pelajaran":subject,
+      "Soal":q.text,
+      "Pilihan A":q.options[0]?.text||"",
+      "Pilihan B":q.options[1]?.text||"",
+      "Pilihan C":q.options[2]?.text||"",
+      "Pilihan D":q.options[3]?.text||"",
+      "Kunci Jawaban":q.answer,
+      "HOTS":q.hots?"YA":"TIDAK",
+      "Pembahasan":q.explanation
+    });
+  }
+
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws["!cols"]=[
+    {wch:6},{wch:15},{wch:10},{wch:25},{wch:65},
+    {wch:30},{wch:30},{wch:30},{wch:35},{wch:20},{wch:10},{wch:60}
+  ];
+
+  XLSX.utils.book_append_sheet(wb,ws,"Soal");
+
+  const kisi=XLSX.utils.aoa_to_sheet([
+    ["KISI-KISI SOAL"],
+    ["Jenjang",level],
+    ["Kelas",grade],
+    ["Mata Pelajaran",subject],
+    [],
+    ["No","Materi","Indikator","Level","Bentuk"],
+    ...rows.map((x,i)=>[
+      i+1,
+      subject,
+      "Peserta didik mampu menjawab pertanyaan sesuai indikator.",
+      x.HOTS==="YA"?"HOTS":"Pemahaman",
+      "Pilihan Ganda"
+    ])
+  ]);
+
+  XLSX.utils.book_append_sheet(wb,kisi,"Kisi-Kisi");
+
+  XLSX.writeFile(
+    wb,
+    `Paket_Soal_${safeFileName(subject)}_${grade.replace(" ","_")}.xlsx`
+  );
+
+  toast("📊","Paket Excel soal berhasil dibuat.");
+}
+
+/* =========================================================
+   UPLOAD
+========================================================= */
+
+document.getElementById("documentUpload").addEventListener("change",function(e){
+  [...e.target.files].forEach(file=>{
+    const data={
+      name:file.name,
+      size:file.size,
+      date:new Date().toLocaleString("id-ID")
+    };
+
+    const list=JSON.parse(localStorage.getItem("edusmart_uploads")||"[]");
+    list.push(data);
+    localStorage.setItem("edusmart_uploads",JSON.stringify(list));
+
+    toast("📤",`${file.name} dicatat sebagai dokumen lokal.`);
+  });
+
+  loadUploadedDocuments();
+});
+
+function handleQuickUpload(event,name){
+  const file=event.target.files[0];
+  if(!file)return;
+
+  const list=JSON.parse(localStorage.getItem("edusmart_uploads")||"[]");
+
+  list.push({
+    name:file.name,
+    category:name,
+    size:file.size,
+    date:new Date().toLocaleString("id-ID")
+  });
+
+  localStorage.setItem("edusmart_uploads",JSON.stringify(list));
+  loadUploadedDocuments();
+  toast("📤",`${name} berhasil dicatat.`);
+}
+
+function loadUploadedDocuments(){
+  const list=JSON.parse(localStorage.getItem("edusmart_uploads")||"[]");
+
+  document.getElementById("uploadedDocuments").innerHTML=list.length?
+    list.map((x,i)=>`
+      <div class="bg-white rounded-2xl border p-4 flex items-center justify-between gap-3">
+        <div>
+          <div class="font-black text-sm">${escapeHTML(x.name)}</div>
+          <div class="text-xs text-slate-400">${formatBytes(x.size)} • ${escapeHTML(x.date)}</div>
+        </div>
+        <button onclick="deleteUpload(${i})" class="text-red-500 font-bold">✕</button>
+      </div>
+    `).join("")
+    :
+    `<div class="text-sm text-slate-400">Belum ada dokumen upload.</div>`;
+}
+
+function deleteUpload(index){
+  const list=JSON.parse(localStorage.getItem("edusmart_uploads")||"[]");
+  list.splice(index,1);
+  localStorage.setItem("edusmart_uploads",JSON.stringify(list));
+  loadUploadedDocuments();
+}
+
+/* =========================================================
+   AUDIO
+========================================================= */
+
+function ensureAudio(){
+  if(!audioCtx){
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  }
+}
+
+function tone(freq,duration,type="sine",volume=.05){
+  try{
+    ensureAudio();
+    const osc=audioCtx.createOscillator();
+    const gain=audioCtx.createGain();
+
+    osc.type=type;
+    osc.frequency.value=freq;
+    gain.gain.value=volume;
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+duration);
+    osc.stop(audioCtx.currentTime+duration);
+  }catch(e){}
+}
+
+function playCorrectSound(){
+  tone(523,.12,"sine",.08);
+  setTimeout(()=>tone(659,.12,"sine",.08),100);
+  setTimeout(()=>tone(784,.25,"sine",.08),200);
+}
+
+function playWrongSound(){
+  tone(250,.18,"sawtooth",.05);
+  setTimeout(()=>tone(180,.35,"sawtooth",.05),150);
+}
+
+function startMusic(){
+  if(!state.music)return;
+
+  stopMusic();
+
+  try{
+    ensureAudio();
+
+    const notes=[261.63,329.63,392,329.63,293.66,349.23,440,349.23];
+    let i=0;
+
+    musicTimer=setInterval(()=>{
+      if(!state.music)return;
+      tone(notes[i%notes.length],.18,"triangle",.018);
+      i++;
+    },280);
+  }catch(e){}
+}
+
+function stopMusic(){
+  if(musicTimer){
+    clearInterval(musicTimer);
+    musicTimer=null;
+  }
+}
+
+function toggleMusic(){
+  state.music=!state.music;
+
+  document.getElementById("musicBtn").textContent=
+    state.music?"🔊 Musik":"🔇 Musik";
+
+  if(state.music) startMusic();
+  else stopMusic();
+}
+
+/* =========================================================
+   EFFECTS
+========================================================= */
+
+function celebrate(){
+  const icons=["⭐","🎉","✨","🌟","💫"];
+
+  for(let i=0;i<22;i++){
+    const el=document.createElement("div");
+    el.className="confetti";
+    el.textContent=icons[randomInt(0,icons.length-1)];
+    el.style.left=Math.random()*100+"vw";
+    el.style.top="-20px";
+    el.style.fontSize=(12+Math.random()*20)+"px";
+    el.style.animationDelay=(Math.random()*.4)+"s";
+    document.body.appendChild(el);
+
+    setTimeout(()=>el.remove(),1800);
+  }
+}
+
+/* =========================================================
+   DATA EXPORT
+========================================================= */
+
+function exportAllData(){
+  const data={
+    exportedAt:new Date().toISOString(),
+    leaderboard:getLeaderboard(),
+    uploads:JSON.parse(localStorage.getItem("edusmart_uploads")||"[]")
+  };
+
+  const blob=new Blob(
+    [JSON.stringify(data,null,2)],
+    {type:"application/json"}
+  );
+
+  downloadBlob(blob,`EduSmart_Data_${Date.now()}.json`);
+}
+
+function resetApplicationData(){
+  if(confirm("Reset seluruh data lokal aplikasi?")){
+    localStorage.removeItem("edusmart_leaderboard");
+    localStorage.removeItem("edusmart_uploads");
+    loadUploadedDocuments();
+    toast("🗑️","Data lokal telah direset.");
+  }
+}
+
+/* =========================================================
+   UTILITIES
+========================================================= */
+
+function randomInt(min,max){
+  return Math.floor(Math.random()*(max-min+1))+min;
+}
+
+function shuffle(array){
+  const a=[...array];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function escapeHTML(str){
+  return String(str??"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function safeFileName(name){
+  return String(name||"file")
+    .replace(/[<>:"/\\|?*]+/g,"_")
+    .replace(/\s+/g,"_")
+    .substring(0,80);
+}
+
+function downloadBlob(blob,filename){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function formatBytes(bytes){
+  if(!bytes)return"0 B";
+  const units=["B","KB","MB","GB"];
+  const i=Math.floor(Math.log(bytes)/Math.log(1024));
+  return `${(bytes/Math.pow(1024,i)).toFixed(i?1:0)} ${units[i]}`;
+}
+
+function toast(icon,text){
+  const box=document.getElementById("toast");
+  document.getElementById("toastIcon").textContent=icon;
+  document.getElementById("toastText").textContent=text;
+  box.classList.remove("hidden");
+
+  clearTimeout(window.toastTimeout);
+  window.toastTimeout=setTimeout(()=>{
+    box.classList.add("hidden");
+  },3000);
+}
+
+/* =========================================================
+   COPYRIGHT / APPLICATION INFO
+========================================================= */
+
+console.log(`
+===========================================================
+EduSmart Adventure
+Game & Perangkat Ajar Kurikulum Merdeka
+Pengembang: Ahmad Mahdi
+Tahun Ajaran: 2026/2027
+
+© Ahmad Mahdi
+Website:
+https://s.id/ahmadmahdi-gangstersantri
+Blog:
+https://ahmadmahdiofficial.blogspot.com/
+
+FB: Ahmad Mahdi
+Instagram: Ahmad Mahdi
+TikTok: Bagishop89
+YouTube: Ahmad Mahdi official
+
+Dukungan Pengembangan:
+DANA: 081318209923
+Kontribusi: Rp200.000
+===========================================================
+`);
+
+/* Initial leaderboard */
+renderLeaderboard();
+
+/* Keyboard shortcut: Escape closes modal */
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){
+    document.getElementById("loginModal").classList.add("hidden");
+  }
+});
+</script>
+
+<!--
+=============================================================
+CATATAN TEKNIS IMPLEMENTASI
+=============================================================
+
+1. SINGLE FILE
+   File ini dapat disimpan sebagai:
+   edusmart-adventure.html
+
+2. CDN
+   Tailwind CSS, SheetJS/XLSX dan DOCX menggunakan CDN.
+   Karena itu perangkat membutuhkan internet ketika:
+   - pertama kali memuat library CDN
+   - membuat file Word
+   - membuat file Excel
+
+3. DATA LOKAL
+   Leaderboard dan daftar upload disimpan menggunakan localStorage.
+
+4. 50 SOAL
+   Setiap permainan membentuk 50 soal:
+   - 30 soal reguler
+   - 20 soal HOTS
+
+   Soal dibuat ulang dan pilihan jawaban diacak ketika permainan
+   baru dimulai.
+
+5. AUDIO
+   Musik dan efek suara dibuat menggunakan Web Audio API,
+   sehingga tidak membutuhkan file MP3 eksternal.
+
+6. PERANGKAT AJAR
+   Modul Ajar
+   ATP
+   KKTP
+   Prota
+   Promes
+   LKPD
+   Media Pembelajaran
+   CP Kemenag 046 + Kemendikbud
+   Penilaian
+   Jurnal Harian
+   Soal + Kunci + Kisi-Kisi
+
+7. JENJANG
+   SD/MI  : Kelas 1-6
+   SMP/MTS: Kelas 7-9
+   SMA/MA : Kelas 10-12
+
+8. MATA PELAJARAN
+   Bahasa Arab
+   Bahasa Inggris
+   IPS
+   IPA
+   Qur'an Hadist
+   Bahasa Indonesia
+   SKI
+   Akidah Akhlak
+   Seni Budaya
+   Seni Musik
+   Bahasa Sunda
+   BTQ
+   PAI
+   PJOK
+   PKN
+   TIK
+   Matematika
+
+9. PENGEMBANG
+   Username: Ahmad Mahdi
+   Password: solawat89
+
+   CATATAN KEAMANAN:
+   Kredensial yang ditulis langsung di JavaScript bukan mekanisme
+   keamanan untuk aplikasi produksi. Untuk distribusi publik,
+   autentikasi sebaiknya dipindahkan ke backend/server.
+
+10. IDENTITAS PENGEMBANG
+    Ahmad Mahdi
+
+    Copyright:
+    https://s.id/ahmadmahdi-gangstersantri
+
+    Blog:
+    https://ahmadmahdiofficial.blogspot.com/
+
+    FB:
+    Ahmad Mahdi
+
+    Instagram:
+    Ahmad Mahdi
+
+    TikTok:
+    Bagishop89
+
+    YouTube:
+    Ahmad Mahdi official
+
+=============================================================
+-->
+</body>
+</html>
